@@ -1,216 +1,352 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planejador de Tarefas</title>
-    <style>
-        :root {
-            --azul: #1E22AA;
-            --amarelo-claro: #F7EA48;
-            --amarelo-escuro: #FFB81C;
-            --bg: #f8f9fa;
-            --text: #2d3436;
-        }
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex; flex-direction: column; align-items: center; padding: 20px;
-        }
-        .main-container { display: flex; gap: 25px; max-width: 1100px; width: 100%; }
-        
-        .glass-card {
-            background: #ffffff;
-            border-radius: 15px; padding: 20px;
-            box-shadow: 0 4px 20px rgba(30, 34, 170, 0.1);
-            border-top: 5px solid var(--azul);
-        }
-        
-        #calendar-container { width: 380px; }
-        .header { display: flex; justify-content: space-between; align-items: center; color: var(--azul); }
-        .header button { 
-            background: var(--amarelo-claro); border: none; padding: 5px 15px; 
-            border-radius: 8px; cursor: pointer; color: var(--azul); font-weight: bold;
-        }
-        
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; }
-        .day { 
-            padding: 10px 2px; text-align: center; cursor: pointer; border-radius: 8px; 
-            background: #fff; border: 1px solid #eee; transition: 0.2s;
-        }
-        .day:hover { background: var(--amarelo-claro); }
-        .selected-day { background: var(--azul) !important; color: white; font-weight: bold; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planejador de Tarefas</title>
 
-        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-        
-        .task-item { 
-            display: flex; align-items: center; gap: 8px; margin-bottom: 8px; 
-            background: #fff; padding: 10px; border-radius: 10px; border: 1px solid #eee;
-        }
-        .status-pendente { border-left: 5px solid var(--amarelo-escuro); }
-        .status-andamento { border-left: 5px solid var(--azul); }
-        .status-concluida { border-left: 5px solid #2ecc71; opacity: 0.7; }
-        .status-atrasada { border-left: 5px solid #e74c3c; }
+<style>
+:root {
+    --azul: #1E22AA;
+    --amarelo-claro: #F7EA48;
+    --amarelo-escuro: #FFB81C;
+    --bg: #f8f9fa;
+    --text: #2d3436;
+}
 
-        textarea {
-            width: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 10px;
-            resize: none; font-family: inherit; box-sizing: border-box; background: #fff;
-        }
-        h3 { margin-top: 0; color: var(--azul); display: flex; align-items: center; gap: 8px; }
-        
-        .input-group { display: flex; gap: 5px; margin-top: 10px; }
-        input[type="text"] { flex: 1; border-radius: 8px; border: 1px solid #ddd; padding: 10px; }
-        
-        .btn-add { background: var(--azul); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
-        .btn-del { background: #fee; color: #e74c3c; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
-        .btn-del:hover { background: #e74c3c; color: white; }
-    </style>
+body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.main-container {
+    display: flex;
+    gap: 25px;
+    max-width: 1100px;
+    width: 100%;
+}
+
+.glass-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(30, 34, 170, 0.1);
+    border-top: 5px solid var(--azul);
+}
+
+#calendar-container { width: 380px; }
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--azul);
+}
+
+.header button {
+    background: var(--amarelo-claro);
+    border: none;
+    padding: 5px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--azul);
+    font-weight: bold;
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: center;
+    color: var(--azul);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.day {
+    padding: 10px 2px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #eee;
+    transition: 0.2s;
+}
+
+.day:hover { background: var(--amarelo-claro); }
+
+.selected-day {
+    background: var(--azul) !important;
+    color: white;
+    font-weight: bold;
+}
+
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+}
+
+.status-pendente { border-left: 5px solid var(--amarelo-escuro); }
+.status-andamento { border-left: 5px solid var(--azul); }
+.status-concluida { border-left: 5px solid #2ecc71; opacity: 0.7; }
+.status-atrasada { border-left: 5px solid #e74c3c; }
+
+textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    resize: none;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+h3 {
+    margin-top: 0;
+    color: var(--azul);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-group {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+input[type="text"] {
+    flex: 1;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.btn-add {
+    background: var(--azul);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-del {
+    background: #fee;
+    color: #e74c3c;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+</style>
 </head>
+
 <body>
 
-<h1 style="color: var(--azul); text-transform: uppercase; letter-spacing: 2px;">Planejador de Tarefas</h1>
+<h1 style="color: var(--azul); text-transform: uppercase; letter-spacing: 2px;">
+Planejador de Tarefas
+</h1>
 
 <div class="main-container">
-    <!-- Calendário -->
-    <div id="calendar-container" class="glass-card">
-        <div class="header">
-            <button onclick="changeMonth(-1)">❮</button>
-            <h2 id="monthDisplay" style="font-size: 1.2em;"></h2>
-            <button onclick="changeMonth(1)">❯</button>
-        </div>
-        <div class="grid" id="calendarGrid"></div>
-    </div>
 
-    <div class="right-panel">
-        <!-- Tarefas do Dia -->
-        <div class="glass-card">
-            <h3 id="selectedDateTitle">📅 Selecione uma data</h3>
-            <div id="taskList"></div>
-            <div class="input-group">
-                <input type="text" id="newTask" placeholder="O que precisa ser feito?">
-                <button class="btn-add" onclick="addTask()">Adicionar</button>
-            </div>
-        </div>
+<div id="calendar-container" class="glass-card">
+<div class="header">
+<button onclick="changeMonth(-1)">❮</button>
+<h2 id="monthDisplay" style="font-size: 1.2em;"></h2>
+<button onclick="changeMonth(1)">❯</button>
+</div>
 
-        <!-- Notas Automáticas do Dia -->
-        <div class="glass-card">
-            <h3>📝 Notas de <span id="noteDateLabel">hoje</span></h3>
-            <textarea id="dayNotes" rows="3" placeholder="Detalhes específicos deste dia..." oninput="saveDayData()"></textarea>
-        </div>
+<!-- Dias da semana -->
+<div class="weekdays">
+<div>DOM</div>
+<div>SEG</div>
+<div>TER</div>
+<div>QUA</div>
+<div>QUI</div>
+<div>SEX</div>
+<div>SÁB</div>
+</div>
 
-        <!-- Bloco de Notas Geral -->
-        <div class="glass-card" style="border-top-color: var(--amarelo-escuro);">
-            <h3>📌 Lembretes Gerais (Mensal)</h3>
-            <textarea id="generalNotes" rows="3" placeholder="Anotações que ficam visíveis em qualquer dia..." oninput="saveGeneralNotes()"></textarea>
-        </div>
-    </div>
+<div class="grid" id="calendarGrid"></div>
+</div>
+
+<div class="right-panel">
+
+<div class="glass-card">
+<h3 id="selectedDateTitle">📅 Selecione uma data</h3>
+<div id="taskList"></div>
+<div class="input-group">
+<input type="text" id="newTask" placeholder="O que precisa ser feito?">
+<button class="btn-add" onclick="addTask()">Adicionar</button>
+</div>
+</div>
+
+<div class="glass-card">
+<h3>📝 Notas de <span id="noteDateLabel">hoje</span></h3>
+<textarea id="dayNotes" rows="3" placeholder="Detalhes específicos deste dia..." oninput="saveDayData()"></textarea>
+</div>
+
+<div class="glass-card" style="border-top-color: var(--amarelo-escuro);">
+<h3>📌 Lembretes Gerais (Mensal)</h3>
+<textarea id="generalNotes" rows="3" placeholder="Anotações que ficam visíveis em qualquer dia..." oninput="saveGeneralNotes()"></textarea>
+</div>
+
+</div>
 </div>
 
 <script>
-    let dt = new Date();
-    let selectedDate = "";
+let dt = new Date();
+let selectedDate = "";
 
-    function renderCalendar() {
-        const grid = document.getElementById('calendarGrid');
-        grid.innerHTML = "";
-        const month = dt.getMonth();
-        const year = dt.getFullYear();
-        document.getElementById('monthDisplay').innerText = `${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(dt).toUpperCase()} ${year}`;
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = "";
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const month = dt.getMonth();
+    const year = dt.getFullYear();
 
-        for(let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
-        
-        for(let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${month+1}-${d}`;
-            const dayEl = document.createElement('div');
-            dayEl.className = 'day' + (dateStr === selectedDate ? ' selected-day' : '');
-            dayEl.innerText = d;
-            dayEl.onclick = () => selectDate(dateStr);
-            grid.appendChild(dayEl);
-        }
+    document.getElementById('monthDisplay').innerText =
+        `${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(dt).toUpperCase()} ${year}`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div></div>`;
     }
 
-    function selectDate(date) {
-        selectedDate = date;
-        document.getElementById('selectedDateTitle').innerText = `Tarefas: ${date.split('-').reverse().join('/')}`;
-        document.getElementById('noteDateLabel').innerText = date.split('-').reverse().join('/');
-        renderCalendar();
-        loadDayData();
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr =
+            `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+        const dayEl = document.createElement('div');
+        dayEl.className = 'day' + (dateStr === selectedDate ? ' selected-day' : '');
+        dayEl.innerText = d;
+        dayEl.onclick = () => selectDate(dateStr);
+
+        grid.appendChild(dayEl);
     }
+}
 
-    function loadDayData() {
-        const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-        const dayInfo = data[selectedDate] || { tasks: [], notes: "" };
-        
-        document.getElementById('dayNotes').value = dayInfo.notes || "";
-        
-        const list = document.getElementById('taskList');
-        list.innerHTML = "";
-        (dayInfo.tasks || []).forEach((task, index) => {
-            list.innerHTML += `
-                <div class="task-item status-${task.status}">
-                    <span style="flex:1">${task.text}</span>
-                    <select onchange="updateStatus(${index}, this.value)" style="border:1px solid #ddd; border-radius:5px; padding:2px;">
-                        <option value="pendente" ${task.status=='pendente'?'selected':''}>⏳ Pendente</option>
-                        <option value="andamento" ${task.status=='andamento'?'selected':''}>🔵 Em curso</option>
-                        <option value="concluida" ${task.status=='concluida'?'selected':''}>✅ OK</option>
-                        <option value="atrasada" ${task.status=='atrasada'?'selected':''}>❌ Atrasada</option>
-                    </select>
-                    <button class="btn-del" onclick="deleteTask(${index})">🗑️</button>
-                </div>`;
-        });
-    }
+function selectDate(date) {
+    selectedDate = date;
+    document.getElementById('selectedDateTitle').innerText =
+        `Tarefas: ${date.split('-').reverse().join('/')}`;
+    document.getElementById('noteDateLabel').innerText =
+        date.split('-').reverse().join('/');
 
-    function addTask() {
-        if(!selectedDate) return alert("Selecione um dia primeiro!");
-        const text = document.getElementById('newTask').value;
-        if(!text) return;
-
-        const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-        if(!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
-        
-        data[selectedDate].tasks.push({ text: text, status: 'pendente' });
-        localStorage.setItem('plannerData', JSON.stringify(data));
-        document.getElementById('newTask').value = "";
-        loadDayData();
-    }
-
-    function deleteTask(index) {
-        const data = JSON.parse(localStorage.getItem('plannerData'));
-        data[selectedDate].tasks.splice(index, 1);
-        localStorage.setItem('plannerData', JSON.stringify(data));
-        loadDayData();
-    }
-
-    function saveDayData() {
-        if(!selectedDate) return;
-        const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-        if(!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
-        data[selectedDate].notes = document.getElementById('dayNotes').value;
-        localStorage.setItem('plannerData', JSON.stringify(data));
-    }
-
-    function updateStatus(index, status) {
-        const data = JSON.parse(localStorage.getItem('plannerData'));
-        data[selectedDate].tasks[index].status = status;
-        localStorage.setItem('plannerData', JSON.stringify(data));
-        loadDayData();
-    }
-
-    function saveGeneralNotes() {
-        localStorage.setItem('generalNotes', document.getElementById('generalNotes').value);
-    }
-
-    function changeMonth(dir) {
-        dt.setMonth(dt.getMonth() + dir);
-        renderCalendar();
-    }
-
-    document.getElementById('generalNotes').value = localStorage.getItem('generalNotes') || "";
     renderCalendar();
+    loadDayData();
+}
+
+function loadDayData() {
+    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
+    const dayInfo = data[selectedDate] || { tasks: [], notes: "" };
+
+    document.getElementById('dayNotes').value = dayInfo.notes || "";
+
+    const list = document.getElementById('taskList');
+    list.innerHTML = "";
+
+    (dayInfo.tasks || []).forEach((task, index) => {
+        list.innerHTML += `
+        <div class="task-item status-${task.status}">
+            <span style="flex:1">${task.text}</span>
+            <select onchange="updateStatus(${index}, this.value)">
+                <option value="pendente" ${task.status=='pendente'?'selected':''}>⏳ Pendente</option>
+                <option value="andamento" ${task.status=='andamento'?'selected':''}>🔵 Em curso</option>
+                <option value="concluida" ${task.status=='concluida'?'selected':''}>✅ OK</option>
+                <option value="atrasada" ${task.status=='atrasada'?'selected':''}>❌ Atrasada</option>
+            </select>
+            <button class="btn-del" onclick="deleteTask(${index})">🗑️</button>
+        </div>`;
+    });
+}
+
+function addTask() {
+    if (!selectedDate) return alert("Selecione um dia primeiro!");
+    const text = document.getElementById('newTask').value;
+    if (!text) return;
+
+    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
+    if (!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
+
+    data[selectedDate].tasks.push({ text, status: 'pendente' });
+    localStorage.setItem('plannerData', JSON.stringify(data));
+
+    document.getElementById('newTask').value = "";
+    loadDayData();
+}
+
+function deleteTask(index) {
+    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
+    data[selectedDate].tasks.splice(index, 1);
+    localStorage.setItem('plannerData', JSON.stringify(data));
+    loadDayData();
+}
+
+function updateStatus(index, status) {
+    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
+    data[selectedDate].tasks[index].status = status;
+    localStorage.setItem('plannerData', JSON.stringify(data));
+    loadDayData();
+}
+
+function saveDayData() {
+    if (!selectedDate) return;
+
+    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
+    if (!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
+
+    data[selectedDate].notes =
+        document.getElementById('dayNotes').value;
+
+    localStorage.setItem('plannerData', JSON.stringify(data));
+}
+
+function saveGeneralNotes() {
+    localStorage.setItem(
+        'generalNotes',
+        document.getElementById('generalNotes').value
+    );
+}
+
+function changeMonth(dir) {
+    dt.setMonth(dt.getMonth() + dir);
+    renderCalendar();
+}
+
+document.getElementById('generalNotes').value =
+    localStorage.getItem('generalNotes') || "";
+
+renderCalendar();
 </script>
+
 </body>
 </html>
