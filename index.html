@@ -346,7 +346,42 @@ document.getElementById('generalNotes').value =
     localStorage.getItem('generalNotes') || "";
 
 renderCalendar();
+<script type="module">
+  // Importando as funções necessárias do SDK do Firebase
+  import { initializeApp } from "https://www.gstatic.com";
+  import { getDatabase, ref, push, onValue, set, remove } from "https://www.gstatic.com";
+
+  // Cole aqui o objeto de configuração que você copiou do console
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_PROJETO.firebaseapp.com",
+    databaseURL: "https://SEU_PROJETO.firebaseio.com",
+    projectId: "SEU_PROJETO",
+    storageBucket: "SEU_PROJETO.appspot.com",
+    messagingSenderId: "ID",
+    appId: "APP_ID"
+  };
+
+  // Inicializa o Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const tarefasRef = ref(db, 'tarefas');
+
+  // FUNÇÃO: Enviar nova tarefa (Salvamento Automático)
+  window.adicionarTarefa = (texto) => {
+    push(tarefasRef, {
+      texto: texto,
+      concluida: false
+    });
+  };
+
+  // FUNÇÃO: Ouvir mudanças em tempo real (Colaboração)
+  onValue(tarefasRef, (snapshot) => {
+    const dados = snapshot.val();
+    atualizarInterface(dados); // Chame sua função que renderiza a lista na tela
+  });
 </script>
 
 </body>
 </html>
+
