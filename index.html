@@ -81,7 +81,6 @@ body {
     border-radius: 8px;
     background: #fff;
     border: 1px solid #eee;
-    transition: 0.2s;
 }
 
 .day:hover { background: var(--amarelo-claro); }
@@ -115,35 +114,19 @@ body {
 .status-concluida { border-left: 5px solid #2ecc71; opacity: 0.7; }
 .status-atrasada { border-left: 5px solid #e74c3c; }
 
-textarea {
+textarea, input[type="text"] {
     width: 100%;
     border: 1px solid #ddd;
     border-radius: 10px;
     padding: 10px;
-    resize: none;
     font-family: inherit;
     box-sizing: border-box;
-}
-
-h3 {
-    margin-top: 0;
-    color: var(--azul);
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .input-group {
     display: flex;
     gap: 5px;
     margin-top: 10px;
-}
-
-input[type="text"] {
-    flex: 1;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 10px;
 }
 
 .btn-add {
@@ -154,43 +137,25 @@ input[type="text"] {
     border-radius: 8px;
     cursor: pointer;
 }
-
-.btn-del {
-    background: #fee;
-    color: #e74c3c;
-    border: none;
-    padding: 5px 8px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.8em;
-}
 </style>
 </head>
 
 <body>
 
-<h1 style="color: var(--azul); text-transform: uppercase; letter-spacing: 2px;">
-Planejador de Tarefas
-</h1>
+<h1 style="color: var(--azul); text-transform: uppercase;">Planejador de Tarefas</h1>
 
 <div class="main-container">
 
 <div id="calendar-container" class="glass-card">
 <div class="header">
 <button onclick="changeMonth(-1)">❮</button>
-<h2 id="monthDisplay" style="font-size: 1.2em;"></h2>
+<h2 id="monthDisplay"></h2>
 <button onclick="changeMonth(1)">❯</button>
 </div>
 
-<!-- Dias da semana -->
 <div class="weekdays">
-<div>DOM</div>
-<div>SEG</div>
-<div>TER</div>
-<div>QUA</div>
-<div>QUI</div>
-<div>SEX</div>
-<div>SÁB</div>
+<div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div>
+<div>QUI</div><div>SEX</div><div>SÁB</div>
 </div>
 
 <div class="grid" id="calendarGrid"></div>
@@ -208,23 +173,43 @@ Planejador de Tarefas
 </div>
 
 <div class="glass-card">
-<h3>📝 Notas de <span id="noteDateLabel">hoje</span></h3>
-<textarea id="dayNotes" rows="3" placeholder="Detalhes específicos deste dia..." oninput="saveDayData()"></textarea>
-</div>
-
-<div class="glass-card" style="border-top-color: var(--amarelo-escuro);">
-<h3>📌 Lembretes Gerais (Mensal)</h3>
-<textarea id="generalNotes" rows="3" placeholder="Anotações que ficam visíveis em qualquer dia..." oninput="saveGeneralNotes()"></textarea>
+<h3>📝 Notas do Dia</h3>
+<textarea id="dayNotes" rows="3"></textarea>
 </div>
 
 </div>
 </div>
 
-<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+/* ======= COLE AQUI OS DADOS DO SEU FIREBASE ======= */
+const firebaseConfig = {
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
+};
+/* ================================================ */
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 let dt = new Date();
 let selectedDate = "";
+let unsubscribe = null;
 
-function renderCalendar() {
+window.changeMonth = function(dir){
+    dt.setMonth(dt.getMonth() + dir);
+    renderCalendar();
+}
+
+function renderCalendar(){
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = "";
 
@@ -232,121 +217,87 @@ function renderCalendar() {
     const year = dt.getFullYear();
 
     document.getElementById('monthDisplay').innerText =
-        `${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(dt).toUpperCase()} ${year}`;
+        `${new Intl.DateTimeFormat('pt-BR',{month:'long'}).format(dt).toUpperCase()} ${year}`;
 
     const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
 
-    for (let i = 0; i < firstDay; i++) {
-        grid.innerHTML += `<div></div>`;
-    }
+    for(let i=0;i<firstDay;i++) grid.innerHTML += "<div></div>";
 
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr =
-            `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
-        const dayEl = document.createElement('div');
-        dayEl.className = 'day' + (dateStr === selectedDate ? ' selected-day' : '');
-        dayEl.innerText = d;
-        dayEl.onclick = () => selectDate(dateStr);
-
-        grid.appendChild(dayEl);
+    for(let d=1; d<=daysInMonth; d++){
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const div = document.createElement("div");
+        div.className="day";
+        div.innerText=d;
+        div.onclick=()=>selectDate(dateStr);
+        grid.appendChild(div);
     }
 }
 
-function selectDate(date) {
+window.selectDate = function(date){
     selectedDate = date;
-    document.getElementById('selectedDateTitle').innerText =
-        `Tarefas: ${date.split('-').reverse().join('/')}`;
-    document.getElementById('noteDateLabel').innerText =
-        date.split('-').reverse().join('/');
+    document.getElementById("selectedDateTitle").innerText =
+        "Tarefas: "+date.split("-").reverse().join("/");
 
-    renderCalendar();
-    loadDayData();
+    listenRealtime();
 }
 
-function loadDayData() {
-    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-    const dayInfo = data[selectedDate] || { tasks: [], notes: "" };
+function listenRealtime(){
+    if(unsubscribe) unsubscribe();
 
-    document.getElementById('dayNotes').value = dayInfo.notes || "";
+    const ref = doc(db,"planner",selectedDate);
 
-    const list = document.getElementById('taskList');
-    list.innerHTML = "";
+    unsubscribe = onSnapshot(ref,(snap)=>{
+        const data = snap.exists()?snap.data():{tasks:[],notes:""};
 
-    (dayInfo.tasks || []).forEach((task, index) => {
-        list.innerHTML += `
-        <div class="task-item status-${task.status}">
-            <span style="flex:1">${task.text}</span>
-            <select onchange="updateStatus(${index}, this.value)">
-                <option value="pendente" ${task.status=='pendente'?'selected':''}>⏳ Pendente</option>
-                <option value="andamento" ${task.status=='andamento'?'selected':''}>🔵 Em curso</option>
-                <option value="concluida" ${task.status=='concluida'?'selected':''}>✅ OK</option>
-                <option value="atrasada" ${task.status=='atrasada'?'selected':''}>❌ Atrasada</option>
-            </select>
-            <button class="btn-del" onclick="deleteTask(${index})">🗑️</button>
-        </div>`;
+        document.getElementById("dayNotes").value=data.notes||"";
+
+        const list=document.getElementById("taskList");
+        list.innerHTML="";
+
+        (data.tasks||[]).forEach((task,index)=>{
+            list.innerHTML+=`
+            <div class="task-item status-${task.status}">
+                <span style="flex:1">${task.text}</span>
+                <select onchange="updateStatus(${index},this.value)">
+                    <option value="pendente" ${task.status=="pendente"?"selected":""}>⏳</option>
+                    <option value="andamento" ${task.status=="andamento"?"selected":""}>🔵</option>
+                    <option value="concluida" ${task.status=="concluida"?"selected":""}>✅</option>
+                    <option value="atrasada" ${task.status=="atrasada"?"selected":""}>❌</option>
+                </select>
+                <button onclick="deleteTask(${index})">🗑️</button>
+            </div>`;
+        });
     });
 }
 
-function addTask() {
-    if (!selectedDate) return alert("Selecione um dia primeiro!");
-    const text = document.getElementById('newTask').value;
-    if (!text) return;
+window.addTask = async function(){
+    if(!selectedDate) return alert("Selecione um dia");
 
-    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-    if (!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
+    const input=document.getElementById("newTask");
+    if(!input.value) return;
 
-    data[selectedDate].tasks.push({ text, status: 'pendente' });
-    localStorage.setItem('plannerData', JSON.stringify(data));
+    const ref=doc(db,"planner",selectedDate);
+    const snap=await fetch(ref.path);
+    const current = {};
 
-    document.getElementById('newTask').value = "";
-    loadDayData();
+    const data = { tasks:[], notes:"" };
+
+    data.tasks.push({text:input.value,status:"pendente"});
+    await setDoc(ref,data,{merge:true});
+
+    input.value="";
 }
 
-function deleteTask(index) {
-    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-    data[selectedDate].tasks.splice(index, 1);
-    localStorage.setItem('plannerData', JSON.stringify(data));
-    loadDayData();
+window.updateStatus = async function(index,status){
+    const ref=doc(db,"planner",selectedDate);
+    const snap=await fetch(ref.path);
 }
 
-function updateStatus(index, status) {
-    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-    data[selectedDate].tasks[index].status = status;
-    localStorage.setItem('plannerData', JSON.stringify(data));
-    loadDayData();
-}
-
-function saveDayData() {
-    if (!selectedDate) return;
-
-    const data = JSON.parse(localStorage.getItem('plannerData') || "{}");
-    if (!data[selectedDate]) data[selectedDate] = { tasks: [], notes: "" };
-
-    data[selectedDate].notes =
-        document.getElementById('dayNotes').value;
-
-    localStorage.setItem('plannerData', JSON.stringify(data));
-}
-
-function saveGeneralNotes() {
-    localStorage.setItem(
-        'generalNotes',
-        document.getElementById('generalNotes').value
-    );
-}
-
-function changeMonth(dir) {
-    dt.setMonth(dt.getMonth() + dir);
-    renderCalendar();
-}
-
-document.getElementById('generalNotes').value =
-    localStorage.getItem('generalNotes') || "";
+window.deleteTask = async function(index){}
 
 renderCalendar();
-</script>
 
+</script>
 </body>
 </html>
