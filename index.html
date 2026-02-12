@@ -8,10 +8,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --azul: #1E22AA; --amarelo-claro: #F7EA48; --amarelo-escuro: #FFB81C; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .main-container { display: flex; gap: 20px; max-width: 1100px; width: 100%; align-items: flex-start; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid var(--azul); margin-bottom: 15px; }
-        #calendar-container { width: 400px; min-height: 480px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .main-container { display: flex; gap: 20px; max-width: 1100px; width: 100%; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid var(--azul); margin-bottom: 15px; box-sizing: border-box; }
+        #calendar-container { width: 400px; min-height: 450px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .nav-btn { background: var(--amarelo-claro); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; color: var(--azul); }
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
@@ -20,6 +20,184 @@
         .day:hover { background: var(--amarelo-claro); }
         .selected { background: var(--azul) !important; color: white !important; font-weight: bold; }
         .empty-day { padding: 12px 0; }
-        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        .right-panel { flex: 1; min-width: 300px; display: flex; flex-direction: column; }
         .task-item { display: flex; gap: 10px; align-items: center; background: #fdfdfd; padding: 10px; border-radius: 8px; border-left: 5px solid var(--amarelo-escuro); margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px
+        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-sizing: border-box; resize: none; font-family: inherit; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; outline: none; }
+        .btn-add { background: var(--azul); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .yellow-card { border-color: var(--amarelo-escuro); }
+        h1 { color: var(--azul); margin-bottom: 20px; text-align: center; }
+        h3 { color: var(--azul); margin-top: 0; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+
+<h1>PLANEJADOR DE TAREFAS</h1>
+
+<div class="main-container">
+    <div id="calendar-container" class="card">
+        <div class="header">
+            <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
+            <h3 id="monthDisplay" style="margin: 0;"></h3>
+            <button class="nav-btn" onclick="changeMonth(1)">❯</button>
+        </div>
+        <div class="grid weekday-header">
+            <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+        </div>
+        <div class="grid" id="calendarGrid"></div>
+    </div>
+
+    <div class="right-panel">
+        <div class="card">
+            <h3 id="dateLabel">📅 Selecione uma data</h3>
+            <div id="taskList" style="margin-bottom: 10px;"></div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="taskInput" placeholder="O que precisa ser feito?">
+                <button class="btn-add" onclick="addTask()">Adicionar</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📝 Notas de <span id="noteDateLabel">...</span></h3>
+            <textarea id="dayNotes" rows="4" placeholder="Detalhes específicos deste dia..." oninput="saveDayNotes()"></textarea>
+        </div>
+        <div class="card yellow-card">
+            <h3>📌 Lembretes Gerais (Mensal)</h3>
+            <textarea id="generalNotes" rows="3" placeholder="Anotações para a equipe..." oninput="saveGeneralNotes()"></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ATENÇÃO: Verifique se suas credenciais estão entre aspas ---
+    const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        authDomain: "SEU_PROJETO.firebaseapp.com",
+        databaseURL: "https://SEU_PROJETO.firebaseio.com",
+        projectId: "SEU_PROJETO",
+        storageBucket: "SEU_PROJETO.appspot.com",
+        messagingSenderId: "SENDER_ID",
+        appId: "APP_ID"
+    };
+
+    let db;
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+    } catch(e) {
+        console.error("Erro no Firebase: ", e);
+        alert("Erro de configuração! Verifique se os dados do Firebase estão corretos.");
+    }
+
+    let currentDt = new Date();
+    let selectedDate = "";
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        if(!grid) return;
+        grid.innerHTML = "";
+        const month = currentDt.getMonth();
+        const year = currentDt.getFullYear();
+        const meses = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+        document.getElementById('monthDisplay').innerText = `${meses[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for(let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="empty-day"></div>`;
+        for(let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dayEl = document.createElement('div');
+            dayEl.className = `day ${dateStr === selectedDate ? 'selected' : ''}`;
+            dayEl.innerText = d;
+            dayEl.onclick = () => selectDate(dateStr);
+            grid.appendChild(dayEl);
+        }
+    }
+
+    function selectDate(date) {
+        selectedDate = date;
+        const [y, m, d] = date.split('-');
+        document.getElementById('dateLabel').innerText = `📅 Tarefas: ${d}/${m}/${y}`;
+        document.getElementById('noteDateLabel').innerText = `${d}/${m}/${y}`;
+        renderCalendar();
+        if(db) {
+            db.ref('planner/days/' + selectedDate).on('value', (snapshot) => {
+                const data = snapshot.val() || { tasks: [], notes: "" };
+                updateUI(data);
+            });
+        }
+    }
+
+    function updateUI(data) {
+        const list = document.getElementById('taskList');
+        list.innerHTML = "";
+        document.getElementById('dayNotes').value = data.notes || "";
+        const tasks = data.tasks || [];
+        tasks.forEach((task, index) => {
+            list.innerHTML += `
+                <div class="task-item">
+                    <span style="flex:1;">${task.text}</span>
+                    <select onchange="updateStatus(${index}, this.value)" style="border-radius:4px; border:1px solid #ddd;">
+                        <option value="pendente" ${task.status=='pendente'?'selected':''}>⏳</option>
+                        <option value="andamento" ${task.status=='andamento'?'selected':''}>🔵</option>
+                        <option value="concluida" ${task.status=='concluida'?'selected':''}>✅</option>
+                    </select>
+                    <button onclick="deleteTask(${index})" style="border:none; background:none; cursor:pointer; font-size:1.1em;">🗑️</button>
+                </div>`;
+        });
+    }
+
+    function addTask() {
+        const input = document.getElementById('taskInput');
+        if(!selectedDate || !input.value.trim() || !db) return;
+        db.ref('planner/days/' + selectedDate + '/tasks').once('value').then(snap => {
+            const tasks = snap.val() || [];
+            tasks.push({ text: input.value, status: 'pendente' });
+            db.ref('planner/days/' + selectedDate + '/tasks').set(tasks);
+            input.value = "";
+        });
+    }
+
+    function saveDayNotes() {
+        if(!selectedDate || !db) return;
+        db.ref('planner/days/' + selectedDate + '/notes').set(document.getElementById('dayNotes').value);
+    }
+
+    function updateStatus(index, status) {
+        if(!db) return;
+        db.ref(`planner/days/${selectedDate}/tasks/${index}/status`).set(status);
+    }
+
+    function deleteTask(index) {
+        if(!db) return;
+        db.ref(`planner/days/${selectedDate}/tasks`).once('value').then(snap => {
+            let tasks = snap.val() || [];
+            tasks.splice(index, 1);
+            db.ref(`planner/days/${selectedDate}/tasks`).set(tasks);
+        });
+    }
+
+    function saveGeneralNotes() {
+        if(!db) return;
+        db.ref('planner/generalNotes').set(document.getElementById('generalNotes').value);
+    }
+
+    function changeMonth(dir) {
+        currentDt.setMonth(currentDt.getMonth() + dir);
+        renderCalendar();
+    }
+
+    window.onload = () => {
+        renderCalendar();
+        if(db) {
+            db.ref('planner/generalNotes').on('value', snap => {
+                document.getElementById('generalNotes').value = snap.val() || "";
+            });
+            const hoje = new Date();
+            const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+            selectDate(hojeStr);
+        }
+    };
+</script>
+</body>
+</html>
