@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Tarefas</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -11,8 +12,9 @@
         
         .main-container { display: flex; gap: 20px; max-width: 1100px; width: 100%; align-items: flex-start; }
         
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid var(--azul); }
-        #calendar-container { width: 400px; min-height: 400px; }
+        /* Calendário */
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid var(--azul); margin-bottom: 15px; }
+        #calendar-container { width: 400px; min-height: 480px; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .nav-btn { background: var(--amarelo-claro); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; color: var(--azul); }
@@ -20,28 +22,35 @@
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
         .weekday-header { font-weight: bold; color: var(--azul); font-size: 0.85em; margin-bottom: 10px; }
         
-        .day { padding: 10px 0; cursor: pointer; border-radius: 8px; border: 1px solid #f0f0f0; transition: 0.2s; font-size: 0.9em; background: #fff; }
+        .day { padding: 12px 0; cursor: pointer; border-radius: 8px; border: 1px solid #f0f0f0; transition: 0.2s; font-size: 0.9em; background: #fff; }
         .day:hover { background: var(--amarelo-claro); }
         .selected { background: var(--azul) !important; color: white !important; font-weight: bold; }
-        .empty-day { padding: 10px 0; }
+        .empty-day { padding: 12px 0; }
 
-        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-sizing: border-box; resize: none; font-family: inherit; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; }
-        .btn-add { background: var(--azul); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        /* Painel Direito */
+        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        .task-item { display: flex; gap: 10px; align-items: center; background: #fdfdfd; padding: 10px; border-radius: 8px; border-left: 5px solid var(--amarelo-escuro); margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        
+        textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-sizing: border-box; resize: none; font-family: inherit; font-size: 0.95em; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; outline: none; }
+        input:focus { border-color: var(--azul); }
+        
+        .btn-add { background: var(--azul); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add:hover { opacity: 0.9; transform: scale(1.02); }
+        
         .yellow-card { border-color: var(--amarelo-escuro); }
         h3 { color: var(--azul); margin-top: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
 
-<h1 style="color: var(--azul); margin-bottom: 30px; letter-spacing: 1px;">PLANEJADOR DE TAREFAS</h1>
+<h1 style="color: var(--azul); margin-bottom: 30px; letter-spacing: 1px; font-weight: 800;">PLANEJADOR DE TAREFAS</h1>
 
 <div class="main-container">
     <div id="calendar-container" class="card">
         <div class="header">
             <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
-            <h3 id="monthDisplay" style="margin: 0; font-size: 1em;"></h3>
+            <h3 id="monthDisplay" style="margin: 0;"></h3>
             <button class="nav-btn" onclick="changeMonth(1)">❯</button>
         </div>
         
@@ -55,15 +64,15 @@
     <div class="right-panel">
         <div class="card">
             <h3 id="dateLabel">📅 Selecione uma data</h3>
-            <div id="taskList"></div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
+            <div id="taskList" style="margin-bottom: 10px;"></div>
+            <div style="display:flex; gap:10px;">
                 <input type="text" id="taskInput" placeholder="O que precisa ser feito?">
                 <button class="btn-add" onclick="addTask()">Adicionar</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>📝 Notas de <span id="noteDateLabel">hoje</span></h3>
+            <h3>📝 Notas de <span id="noteDateLabel">...</span></h3>
             <textarea id="dayNotes" rows="4" placeholder="Detalhes específicos deste dia..." oninput="saveNotes()"></textarea>
         </div>
 
@@ -75,7 +84,7 @@
 </div>
 
 <script>
-    // IMPORTANTE: Preencha com seus dados reais do Firebase para funcionar o salvamento
+    // CONFIGURAÇÃO FIREBASE
     const firebaseConfig = {
         apiKey: "SUA_API_KEY",
         databaseURL: "SUA_URL_DO_DATABASE",
@@ -85,19 +94,21 @@
         appId: "SUA_APP_ID"
     };
     
-    // Inicializa apenas se as chaves forem preenchidas
-    if(firebaseConfig.apiKey !== "SUA_API_KEY") {
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
-    }
+    let db;
+    try {
+        if(firebaseConfig.apiKey !== "SUA_API_KEY") {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        }
+    } catch(e) { console.error("Firebase não configurado."); }
 
     let currentDt = new Date();
     let selectedDate = "";
+    let localTasks = []; // Backup local caso o Firebase falhe
 
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
         grid.innerHTML = "";
-        
         const month = currentDt.getMonth();
         const year = currentDt.getFullYear();
         
@@ -107,16 +118,12 @@
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // Criar espaços vazios para o início da semana
         for(let i = 0; i < firstDay; i++) {
-            const empty = document.createElement('div');
-            empty.className = "empty-day";
-            grid.appendChild(empty);
+            grid.innerHTML += `<div class="empty-day"></div>`;
         }
         
-        // Criar os dias do mês
         for(let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${month + 1}-${d}`;
+            const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const dayEl = document.createElement('div');
             dayEl.className = `day ${dateStr === selectedDate ? 'selected' : ''}`;
             dayEl.innerText = d;
@@ -128,19 +135,88 @@
     function selectDate(date) {
         selectedDate = date;
         const [y, m, d] = date.split('-');
-        const dataFormatada = `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+        const dataFormatada = `${d}/${m}/${y}`;
         
         document.getElementById('dateLabel').innerText = `📅 Tarefas: ${dataFormatada}`;
         document.getElementById('noteDateLabel').innerText = dataFormatada;
         
         renderCalendar();
-        
-        if(typeof db !== 'undefined') {
+        loadData();
+    }
+
+    function loadData() {
+        if(db) {
             db.ref('days/' + selectedDate).on('value', (snapshot) => {
                 const data = snapshot.val() || { tasks: [], notes: "" };
+                localTasks = data.tasks || [];
                 updateUI(data);
             });
+        } else {
+            // Se não houver Firebase, limpa para nova entrada
+            updateUI({ tasks: localTasks, notes: "" });
         }
+    }
+
+    function updateUI(data) {
+        const list = document.getElementById('taskList');
+        list.innerHTML = "";
+        document.getElementById('dayNotes').value = data.notes || "";
+
+        const tasks = data.tasks || [];
+        tasks.forEach((task, index) => {
+            list.innerHTML += `
+                <div class="task-item">
+                    <span style="flex:1; font-size:0.95em;">${task.text}</span>
+                    <select onchange="updateStatus(${index}, this.value)" style="border:1px solid #ddd; border-radius:4px; padding:2px;">
+                        <option value="pendente" ${task.status=='pendente'?'selected':''}>⏳</option>
+                        <option value="andamento" ${task.status=='andamento'?'selected':''}>🔵</option>
+                        <option value="concluida" ${task.status=='concluida'?'selected':''}>✅</option>
+                    </select>
+                    <button onclick="deleteTask(${index})" style="border:none; background:none; cursor:pointer; font-size:1.1em;">🗑️</button>
+                </div>`;
+        });
+    }
+
+    function addTask() {
+        const input = document.getElementById('taskInput');
+        const text = input.value.trim();
+        
+        if(!selectedDate) { alert("Selecione um dia no calendário primeiro!"); return; }
+        if(!text) return;
+
+        localTasks.push({ text: text, status: 'pendente' });
+        
+        if(db) {
+            db.ref('days/' + selectedDate + '/tasks').set(localTasks);
+        } else {
+            updateUI({ tasks: localTasks }); // Funciona localmente mesmo sem DB
+        }
+        
+        input.value = "";
+    }
+
+    function deleteTask(index) {
+        localTasks.splice(index, 1);
+        if(db) {
+            db.ref('days/' + selectedDate + '/tasks').set(localTasks);
+        } else {
+            updateUI({ tasks: localTasks });
+        }
+    }
+
+    function updateStatus(index, status) {
+        localTasks[index].status = status;
+        if(db) db.ref('days/' + selectedDate + '/tasks').set(localTasks);
+    }
+
+    function saveNotes() {
+        if(!selectedDate) return;
+        const noteText = document.getElementById('dayNotes').value;
+        if(db) db.ref('days/' + selectedDate + '/notes').set(noteText);
+    }
+
+    function saveGeneralNotes() {
+        localStorage.setItem('generalNotes', document.getElementById('generalNotes').value);
     }
 
     function changeMonth(dir) {
@@ -148,17 +224,16 @@
         renderCalendar();
     }
 
-    // Inicialização ao carregar a página
+    // Inicialização
     window.onload = () => {
         document.getElementById('generalNotes').value = localStorage.getItem('generalNotes') || "";
         renderCalendar();
+        
+        // Seleciona o dia de hoje automaticamente
+        const hoje = new Date();
+        const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+        selectDate(hojeStr);
     };
-
-    // Funções extras (placeholder para evitar erros se clicar sem Firebase)
-    function saveGeneralNotes() {
-        localStorage.setItem('generalNotes', document.getElementById('generalNotes').value);
-    }
-    function updateUI(data) { /* Lógica de atualização da lista */ }
 </script>
 </body>
 </html>
